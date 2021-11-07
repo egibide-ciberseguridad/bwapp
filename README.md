@@ -2,16 +2,26 @@
 
 This is just an instance of the OWASP [bWAPP project](http://www.itsecgames.com/) as a docker container.
 
-The container is based on [raesene/bwapp](https://hub.docker.com/r/raesene/bwapp/)
+The container is based on [h0pp/bWAPP](https://github.com/h0pp/bWAPP)
 
-I have updated the LAMP version to fix the CAPTCHA challange that stopped working.
+## Launching the application
 
-To launch the application, you should use:
+Run:
 
+```bash
+docker-compose up -d
 ```
-docker run -d -p 8000:80 h0pp/bWAPP
+
+And [finish the database installation](http://localhost:8000/install.php).
+
+## Using the app
+
+[Access the website](http://localhost:8000).
+
+## Cleanup
+
+Just run:
+
+```bash
+docker-compose down
 ```
-
-(Note: I recommend using port 8000 to prevent right problems in ports under 1024).
-
-and you should be able to go to <ip>/install.php to set up your instance.
