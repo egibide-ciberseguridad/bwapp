@@ -9,10 +9,14 @@ The container is based on [h0pp/bWAPP](https://github.com/h0pp/bWAPP)
 Run:
 
 ```bash
-docker-compose up -d
+make start
 ```
 
-And [finish the database installation](http://localhost:8000/install.php).
+And finish the database installation:
+
+```bash
+make bd
+```
 
 ## Using the app
 
@@ -23,5 +27,5 @@ And [finish the database installation](http://localhost:8000/install.php).
 Just run:
 
 ```bash
-docker-compose down
+make clean
 ```
