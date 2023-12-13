@@ -27,7 +27,7 @@ _start_command:
 start: _start_command _urls
 
 bd:
-	@docker compose exec website curl -s http://localhost/install.php?install=yes > /dev/null && echo "INFO: Base de datos creada." || echo "ERROR: No se ha podido crear la base de datos..."
+	@docker compose exec website /bin/sh -c 'curl -s http://localhost/install.php?install=yes > /dev/null && echo "INFO: Base de datos creada." || echo "ERROR: No se ha podido crear la base de datos..."'
 
 stop:
 	@docker compose stop
